@@ -20,4 +20,8 @@ export class UsersService {
     this.users.push(newUser);
     console.log(this.users)
   }
+
+  findById(id: string) : User | undefined {
+    return this.users.find(u => u.id === id);
+  }
 }
