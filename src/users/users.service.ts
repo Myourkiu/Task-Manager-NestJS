@@ -24,4 +24,8 @@ export class UsersService {
   findById(id: string) : User | undefined {
     return this.users.find(u => u.id === id);
   }
+
+  findByUsername(username: string) : User | undefined {
+    return this.users.find(u => u.username === username);
+  }
 }
