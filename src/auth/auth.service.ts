@@ -16,8 +16,8 @@ export class AuthService {
         this.jwtExpirationInSeconds = +this.configService.get<number>('JWT_EXPIRATION_TIME')!;
     }
 
-    signIn(username: string, password: string) : AuthResponse{
-        const foundUser = this.userService.findByUsername(username);
+    async signIn(username: string, password: string) : Promise<AuthResponse>{
+        const foundUser = await this.userService.findByUsername(username);
 
         if(foundUser == undefined)
             throw new NotFoundException('User not found');

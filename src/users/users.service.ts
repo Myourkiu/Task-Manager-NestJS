@@ -1,31 +1,59 @@
-import { Injectable } from "@nestjs/common";
+import { ConflictException, Injectable } from "@nestjs/common";
 import { User } from "src/models/user";
 import { hashSync } from "bcrypt";
 import { v4 as uuid } from "uuid";
+import { InjectRepository } from "@nestjs/typeorm";
+import { UserEntity } from "src/db/entities/user.entity";
+import { Repository } from "typeorm";
+import { PassThrough } from "stream";
 
 @Injectable()
 export class UsersService {
-  private users: User[] = [
-    {
-      id: "123",
-      username: "Teste",
-      password: "senha",
-    },
-  ];
+  constructor(
+    @InjectRepository(UserEntity)
+    private readonly userRepository: Repository<UserEntity>
+  ) {}
 
-  create(newUser: User) {
-    newUser.id = uuid();
-    newUser.password = hashSync(newUser.password, 10);
+  private users: User[] = [];
 
-    this.users.push(newUser);
-    console.log(this.users)
+  async create(newUser: User) {
+    const existentUser = await this.findByUsername(newUser.username)
+
+    if(existentUser)
+      throw new ConflictException(`User ${newUser.username} already exists.`)
+
+    const dbUser = new UserEntity()
+    dbUser.username = newUser.username
+    dbUser.passwordHash = hashSync(newUser.password, 10)
+
+    const response = await this.userRepository.save(dbUser)
+    return {id: response.id, username: response.username, password: response.passwordHash};
+
   }
 
-  findById(id: string) : User | undefined {
-    return this.users.find(u => u.id === id);
-  }
+  async findById(id: string): Promise<User | null> {
+    const userFound = await this.userRepository.findOne({where: {id}});
 
-  findByUsername(username: string) : User | undefined {
-    return this.users.find(u => u.username === username);
+    if(!userFound)
+      return null;
+
+    return {
+      id: userFound!.id,
+      username: userFound!.username,
+      password: userFound!.passwordHash
+  }
+}
+
+  async findByUsername(username: string): Promise<User | null> {
+    const userFound = await this.userRepository.findOne({where: {username}});
+
+    if(!userFound)
+      return null;
+
+    return {
+      id: userFound!.id,
+      username: userFound!.username,
+      password: userFound!.passwordHash
+    }
   }
 }
